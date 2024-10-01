@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
-import { FaPlus, FaSearch } from 'react-icons/fa';
+import { FaPlus, FaSearch, FaEdit, FaTrash } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import axios from 'axios';
-import '../vehicle.css';
+import { Modal, Button } from 'react-bootstrap';
+import 'bootstrap/dist/css/bootstrap.min.css';
+
 
 const EquipmentEntry = () => {
     const adminId = localStorage.getItem('adminId') || '';
@@ -12,7 +14,10 @@ const EquipmentEntry = () => {
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const [entriesPerPage, setEntriesPerPage] = useState(10);
+    const [entriesPerPage] = useState(10);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [newEquipmentName, setNewEquipmentName] = useState('');
+    const [newEquipmentQuantity, setNewEquipmentQuantity] = useState('');
     const navigate = useNavigate();
     const adminLevel = localStorage.getItem('adminLevel');
 
@@ -47,6 +52,47 @@ const EquipmentEntry = () => {
         }
     };
 
+    const handleSubmit = async () => {
+        if (!newEquipmentName || !newEquipmentQuantity) {
+            toast.error("All fields are required!");
+            return;
+        }
+
+        const equipmentData = {
+            name: newEquipmentName,
+            quantity: newEquipmentQuantity,
+            admin_id: adminId
+        };
+
+        const formData = new FormData();
+        formData.append("operation", "saveEquipment");
+        formData.append("json", JSON.stringify(equipmentData));
+
+        setLoading(true);
+        try {
+            const url = "http://localhost/coc/gsd/insert_master.php";
+            const response = await axios.post(url, formData);
+
+            if (response.data.status === 'success') {
+                toast.success("Equipment successfully added!");
+                fetchEquipments();
+                resetForm();
+            } else {
+                toast.error("Failed to add equipment: " + (response.data.message || "Unknown error"));
+            }
+        } catch (error) {
+            toast.error("An error occurred while adding equipment.");
+        } finally {
+            setLoading(false);
+            setIsModalOpen(false);
+        }
+    };
+
+    const resetForm = () => {
+        setNewEquipmentName('');
+        setNewEquipmentQuantity('');
+    };
+
     const filteredEquipments = equipments.filter(equipment =>
         equipment.equip_name && equipment.equip_name.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -73,6 +119,9 @@ const EquipmentEntry = () => {
                     />
                     <button onClick={fetchEquipments} className="flex items-center bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 ml-4">
                         <FaSearch className="mr-2" /> Search
+                    </button>
+                    <button onClick={() => setIsModalOpen(true)} className="flex items-center bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 ml-4">
+                        <FaPlus className="mr-2" /> Add Equipment
                     </button>
                 </div>
 
@@ -104,8 +153,12 @@ const EquipmentEntry = () => {
                                         <td className="py-3 px-6">{equipment.equip_created_at}</td>
                                         <td className="py-3 px-6">{equipment.equip_updated_at}</td>
                                         <td className="py-3 px-6">
-                                            <button className="text-blue-500">Edit</button>
-                                            <button className="text-red-500 ml-2">Delete</button>
+                                            <button className="text-blue-500" onClick={() => {/* editEquipment logic */}}>
+                                                <FaEdit />
+                                            </button>
+                                            <button className="text-red-500 ml-2" onClick={() => {/* deleteEquipment logic */}}>
+                                                <FaTrash />
+                                            </button>
                                         </td>
                                     </tr>
                                 ))
@@ -133,8 +186,45 @@ const EquipmentEntry = () => {
                     <span>Page {currentPage} of {totalPages}</span>
                 </div>
             </div>
+
+            {/* React Bootstrap Modal */}
+            <Modal show={isModalOpen} onHide={() => setIsModalOpen(false)}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Add Equipment</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <div className="mb-3">
+                        <label htmlFor="equipmentName" className="form-label">Equipment Name</label>
+                        <input
+                            type="text"
+                            id="equipmentName"
+                            className="form-control"
+                            value={newEquipmentName}
+                            onChange={(e) => setNewEquipmentName(e.target.value)}
+                        />
+                    </div>
+                    <div className="mb-3">
+                        <label htmlFor="equipmentQuantity" className="form-label">Quantity</label>
+                        <input
+                            type="number"
+                            id="equipmentQuantity"
+                            className="form-control"
+                            value={newEquipmentQuantity}
+                            onChange={(e) => setNewEquipmentQuantity(e.target.value)}
+                        />
+                    </div>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setIsModalOpen(false)}>
+                        Close
+                    </Button>
+                    <Button variant="primary" onClick={handleSubmit}>
+                        Submit
+                    </Button>
+                </Modal.Footer>
+            </Modal>
         </div>
     );
 };
 
-export default EquipmentEntry;
+export default EquipmentEntry

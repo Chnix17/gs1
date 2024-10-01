@@ -132,23 +132,24 @@ const VehicleEntry = () => {
         }
     
         const vehicleData = {
-            model_name: vehicleModel,   // Match with PHP parameter
-            admin_id: adminId,          // Match with PHP parameter
-            make_id: vehicleMake,       // Match with PHP parameter
+            model_name: vehicleModel,
+            admin_id: adminId,
+            make_id: vehicleMake,
         };
     
         const formData = new FormData();
-        formData.append("operation", editMode ? "updateVehicleModel" : "saveVehicleModel");
-        formData.append("json", JSON.stringify({ ...vehicleData }));
+        formData.append("operation", "saveVehicleModel");
+        formData.append("json", JSON.stringify(vehicleData));
     
         setLoading(true);
         try {
-            const url = "http://localhost/coc/gsd/user.php";
+            const url = "http://localhost/coc/gsd/insert_master.php";
             const response = await axios.post(url, formData);
+            
             if (response.data.status === 'success') {
-                toast.success(`Vehicle model successfully ${editMode ? "updated" : "added"}!`);
-                await fetchVehicles();  // Refresh the vehicle list
-                resetForm();           // Reset form fields
+                toast.success("Vehicle model successfully added!");
+                await fetchVehicles();  
+                resetForm();        
             } else {
                 toast.error("Failed to save vehicle model: " + (response.data.message || "Unknown error"));
             }
@@ -158,6 +159,8 @@ const VehicleEntry = () => {
             setLoading(false);
         }
     };
+    
+    
     
 
     const resetForm = () => {
